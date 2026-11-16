@@ -361,10 +361,11 @@ def _state_snapshot() -> dict:
         'last_winner_id': last_winner_id, 'winner_history': winner_history,
         'rp_last_winner_id': rp_last_winner_id, 'rp_winner_history': rp_winner_history,
         'biz_last_winner_id': biz_last_winner_id, 'biz_winner_history': biz_winner_history,
+        'inf_bot_online': inf_bot_online,
     }
 
 def _load_state():
-    global last_winner_id, winner_history, rp_last_winner_id, rp_winner_history, biz_last_winner_id, biz_winner_history
+    global last_winner_id, winner_history, rp_last_winner_id, rp_winner_history, biz_last_winner_id, biz_winner_history, inf_bot_online
     saved = storage_read(STATE_KEY)
     if not isinstance(saved, dict):
         return
@@ -376,6 +377,8 @@ def _load_state():
     rp_winner_history = list(saved.get('rp_winner_history') or [])
     biz_last_winner_id = saved.get('biz_last_winner_id')
     biz_winner_history = list(saved.get('biz_winner_history') or [])
+    if saved.get('inf_bot_online') in (True, False):
+        inf_bot_online = saved['inf_bot_online']
 
 _load_state()
 _state_last_saved = json.dumps(_state_snapshot(), sort_keys=True, default=str)
@@ -632,7 +635,7 @@ class SetupModal(discord.ui.Modal, title="⚙️ Nighthawk — INF Konfiguracija
                     elif s == e:
                         errors.append("❌ Vremena: start i kraj ne mogu biti isti.")
                     elif event_active:
-                        errors.append("⚠️ Vremena: ne možeš mijenjati dok event traje (`/force_end` prvo).")
+                        errors.append("⚠️ Vremena: ne možeš mijenjati dok event traje (`/inf_force_end` prvo).")
                     else:
                         new_start, new_end = s, e
                 except ValueError:
@@ -832,21 +835,21 @@ class SetupView(discord.ui.View):
     @discord.ui.button(label="🔧 Postavi konfiguraciju", style=discord.ButtonStyle.primary)
     async def open_setup_modal(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self._check_author(interaction):
-            await interaction.response.send_message("❌ Samo osoba koja je pokrenula /setup može koristiti ovu formu.", ephemeral=True)
+            await interaction.response.send_message("❌ Samo osoba koja je pokrenula /inf_setup može koristiti ovu formu.", ephemeral=True)
             return
         await interaction.response.send_modal(SetupModal(self.guild_id))
 
     @discord.ui.button(label="⭐ Priority rola", style=discord.ButtonStyle.secondary)
     async def open_priority_modal(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self._check_author(interaction):
-            await interaction.response.send_message("❌ Samo osoba koja je pokrenula /setup može koristiti ovu formu.", ephemeral=True)
+            await interaction.response.send_message("❌ Samo osoba koja je pokrenula /inf_setup može koristiti ovu formu.", ephemeral=True)
             return
         await interaction.response.send_modal(PriorityRoleModal(self.guild_id))
 
     @discord.ui.button(label="🎙️ VC lampice", style=discord.ButtonStyle.secondary)
     async def open_monitor_vc_modal(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self._check_author(interaction):
-            await interaction.response.send_message("❌ Samo osoba koja je pokrenula /setup može koristiti ovu formu.", ephemeral=True)
+            await interaction.response.send_message("❌ Samo osoba koja je pokrenula /inf_setup može koristiti ovu formu.", ephemeral=True)
             return
         await interaction.response.send_modal(MonitorVCModal(self.guild_id))
 
@@ -860,7 +863,7 @@ class SetupView(discord.ui.View):
     async def inf_status_select(self, interaction: discord.Interaction, select: discord.ui.Select):
         global inf_bot_online
         if not self._check_author(interaction):
-            await interaction.response.send_message("❌ Samo osoba koja je pokrenula /setup može koristiti ovu formu.", ephemeral=True)
+            await interaction.response.send_message("❌ Samo osoba koja je pokrenula /inf_setup može koristiti ovu formu.", ephemeral=True)
             return
         await interaction.response.defer(ephemeral=True)
         channel = await _get_channel(CHANNEL_ID) or interaction.channel
@@ -1856,25 +1859,25 @@ class RPSetupView(discord.ui.View):
     @discord.ui.button(label="🔧 Konfiguracija", style=discord.ButtonStyle.primary)
     async def config(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self._check(interaction):
-            await interaction.response.send_message("❌ Samo pokretač /setuprp može koristiti ovo.", ephemeral=True); return
+            await interaction.response.send_message("❌ Samo pokretač /rp_setup može koristiti ovo.", ephemeral=True); return
         await interaction.response.send_modal(RPSetupModal(self.guild_id))
 
     @discord.ui.button(label="📅 Sati", style=discord.ButtonStyle.primary)
     async def hours(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self._check(interaction):
-            await interaction.response.send_message("❌ Samo pokretač /setuprp može koristiti ovo.", ephemeral=True); return
+            await interaction.response.send_message("❌ Samo pokretač /rp_setup može koristiti ovo.", ephemeral=True); return
         await interaction.response.send_modal(RPHoursModal())
 
     @discord.ui.button(label="⭐ Priority rola", style=discord.ButtonStyle.secondary)
     async def priority(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self._check(interaction):
-            await interaction.response.send_message("❌ Samo pokretač /setuprp može koristiti ovo.", ephemeral=True); return
+            await interaction.response.send_message("❌ Samo pokretač /rp_setup može koristiti ovo.", ephemeral=True); return
         await interaction.response.send_modal(RPPriorityRoleModal(self.guild_id))
 
     @discord.ui.button(label="🎙️ VC lampice", style=discord.ButtonStyle.secondary)
     async def vc(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self._check(interaction):
-            await interaction.response.send_message("❌ Samo pokretač /setuprp može koristiti ovo.", ephemeral=True); return
+            await interaction.response.send_message("❌ Samo pokretač /rp_setup može koristiti ovo.", ephemeral=True); return
         await interaction.response.send_modal(RPMonitorVCModal(self.guild_id))
 
 
@@ -2202,25 +2205,25 @@ class BIZSetupView(discord.ui.View):
     @discord.ui.button(label="🔧 Konfiguracija", style=discord.ButtonStyle.primary)
     async def config(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self._check(interaction):
-            await interaction.response.send_message("❌ Samo pokretač /setupbiz može koristiti ovo.", ephemeral=True); return
+            await interaction.response.send_message("❌ Samo pokretač /biz_setup može koristiti ovo.", ephemeral=True); return
         await interaction.response.send_modal(BIZSetupModal(self.guild_id))
 
     @discord.ui.button(label="📅 Sati", style=discord.ButtonStyle.primary)
     async def hours(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self._check(interaction):
-            await interaction.response.send_message("❌ Samo pokretač /setupbiz može koristiti ovo.", ephemeral=True); return
+            await interaction.response.send_message("❌ Samo pokretač /biz_setup može koristiti ovo.", ephemeral=True); return
         await interaction.response.send_modal(BIZHoursModal())
 
     @discord.ui.button(label="⭐ Priority rola", style=discord.ButtonStyle.secondary)
     async def priority(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self._check(interaction):
-            await interaction.response.send_message("❌ Samo pokretač /setupbiz može koristiti ovo.", ephemeral=True); return
+            await interaction.response.send_message("❌ Samo pokretač /biz_setup može koristiti ovo.", ephemeral=True); return
         await interaction.response.send_modal(BIZPriorityRoleModal(self.guild_id))
 
     @discord.ui.button(label="🎙️ VC lampice", style=discord.ButtonStyle.secondary)
     async def vc(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self._check(interaction):
-            await interaction.response.send_message("❌ Samo pokretač /setupbiz može koristiti ovo.", ephemeral=True); return
+            await interaction.response.send_message("❌ Samo pokretač /biz_setup može koristiti ovo.", ephemeral=True); return
         await interaction.response.send_modal(BIZMonitorVCModal(self.guild_id))
 
 
@@ -2228,7 +2231,7 @@ class BIZSetupView(discord.ui.View):
 # RP & BIZ SLASH COMMANDS
 # ==========================================
 
-@bot.tree.command(name="setuprp", description="Interaktivni setup wizard za RP event (3x/dan).")
+@bot.tree.command(name="rp_setup", description="Interaktivni setup wizard za RP event (3x/dan).")
 @app_commands.default_permissions(administrator=True)
 async def setuprp(interaction: discord.Interaction):
     ch = bot.get_channel(RP_CHANNEL_ID)
@@ -2253,7 +2256,7 @@ async def setuprp(interaction: discord.Interaction):
     embed.set_footer(text="Vidljivo samo tebi")
     await interaction.response.send_message(embed=embed, view=RPSetupView(interaction.guild.id, interaction.user.id), ephemeral=True)
 
-@bot.tree.command(name="setupbiz", description="Interaktivni setup wizard za BIZ event (2x/dan).")
+@bot.tree.command(name="biz_setup", description="Interaktivni setup wizard za BIZ event (2x/dan).")
 @app_commands.default_permissions(administrator=True)
 async def setupbiz(interaction: discord.Interaction):
     ch = bot.get_channel(BIZ_CHANNEL_ID)
@@ -2278,14 +2281,14 @@ async def setupbiz(interaction: discord.Interaction):
     embed.set_footer(text="Vidljivo samo tebi")
     await interaction.response.send_message(embed=embed, view=BIZSetupView(interaction.guild.id, interaction.user.id), ephemeral=True)
 
-@bot.tree.command(name="force_start_rp", description="Ručno pokreće RP event odmah.")
+@bot.tree.command(name="rp_force_start", description="Ručno pokreće RP event odmah.")
 @app_commands.default_permissions(administrator=True)
 async def force_start_rp(interaction: discord.Interaction):
     global rp_event_active, rp_join_button_locked, rp_current_participants, rp_current_event_message
     if rp_event_active:
-        await interaction.response.send_message("⚠️ RP event već traje! Koristi /force_end_rp.", ephemeral=True); return
+        await interaction.response.send_message("⚠️ RP event već traje! Koristi /rp_force_end.", ephemeral=True); return
     if RP_CHANNEL_ID == 0:
-        await interaction.response.send_message("❌ RP kanal nije postavljen. Koristi /setuprp.", ephemeral=True); return
+        await interaction.response.send_message("❌ RP kanal nije postavljen. Koristi /rp_setup.", ephemeral=True); return
     await interaction.response.defer(ephemeral=True)
     rp_event_active = True
     rp_join_button_locked = False
@@ -2322,7 +2325,7 @@ async def force_start_rp(interaction: discord.Interaction):
         await _disable_rp_event_message()
     asyncio.create_task(_auto_end_rp())
 
-@bot.tree.command(name="force_end_rp", description="Zaustavlja RP event bez izvlačenja.")
+@bot.tree.command(name="rp_force_end", description="Zaustavlja RP event bez izvlačenja.")
 @app_commands.default_permissions(administrator=True)
 async def force_end_rp(interaction: discord.Interaction):
     global rp_event_active, rp_current_participants, rp_join_button_locked
@@ -2337,14 +2340,14 @@ async def force_end_rp(interaction: discord.Interaction):
     await _disable_rp_event_message()
     await interaction.followup.send("⏹️ RP event force-stopan.", ephemeral=True)
 
-@bot.tree.command(name="force_start_biz", description="Ručno pokreće BIZ event odmah.")
+@bot.tree.command(name="biz_force_start", description="Ručno pokreće BIZ event odmah.")
 @app_commands.default_permissions(administrator=True)
 async def force_start_biz(interaction: discord.Interaction):
     global biz_event_active, biz_join_button_locked, biz_current_participants, biz_current_event_message
     if biz_event_active:
-        await interaction.response.send_message("⚠️ BIZ event već traje! Koristi /force_end_biz.", ephemeral=True); return
+        await interaction.response.send_message("⚠️ BIZ event već traje! Koristi /biz_force_end.", ephemeral=True); return
     if BIZ_CHANNEL_ID == 0:
-        await interaction.response.send_message("❌ BIZ kanal nije postavljen. Koristi /setupbiz.", ephemeral=True); return
+        await interaction.response.send_message("❌ BIZ kanal nije postavljen. Koristi /biz_setup.", ephemeral=True); return
     await interaction.response.defer(ephemeral=True)
     biz_event_active = True
     biz_join_button_locked = False
@@ -2381,7 +2384,7 @@ async def force_start_biz(interaction: discord.Interaction):
         await _disable_biz_event_message()
     asyncio.create_task(_auto_end_biz())
 
-@bot.tree.command(name="force_end_biz", description="Zaustavlja BIZ event bez izvlačenja.")
+@bot.tree.command(name="biz_force_end", description="Zaustavlja BIZ event bez izvlačenja.")
 @app_commands.default_permissions(administrator=True)
 async def force_end_biz(interaction: discord.Interaction):
     global biz_event_active, biz_current_participants, biz_join_button_locked
@@ -2396,7 +2399,7 @@ async def force_end_biz(interaction: discord.Interaction):
     await _disable_biz_event_message()
     await interaction.followup.send("⏹️ BIZ event force-stopan.", ephemeral=True)
 
-@bot.tree.command(name="reroll_rp", description="Bira novog RP pobjednika — lista ostaje ista.")
+@bot.tree.command(name="rp_reroll", description="Bira novog RP pobjednika — lista ostaje ista.")
 @app_commands.default_permissions(administrator=True)
 async def reroll_rp(interaction: discord.Interaction):
     global rp_last_winner_id, rp_winner_history
@@ -2412,7 +2415,7 @@ async def reroll_rp(interaction: discord.Interaction):
     ch = bot.get_channel(RP_CHANNEL_ID)
     if ch: await ch.send(f"🔁 **RP REROLL!** Novi pobjednik: {wm} 🎭🎉")
 
-@bot.tree.command(name="reroll_biz", description="Bira novog BIZ pobjednika — lista ostaje ista.")
+@bot.tree.command(name="biz_reroll", description="Bira novog BIZ pobjednika — lista ostaje ista.")
 @app_commands.default_permissions(administrator=True)
 async def reroll_biz(interaction: discord.Interaction):
     global biz_last_winner_id, biz_winner_history
@@ -2428,7 +2431,7 @@ async def reroll_biz(interaction: discord.Interaction):
     ch = bot.get_channel(BIZ_CHANNEL_ID)
     if ch: await ch.send(f"🔁 **BIZ REROLL!** Novi pobjednik: {wm} 💼🎉")
 
-@bot.tree.command(name="winner_rp", description="Ponovo objavljuje zadnjeg RP pobjednika.")
+@bot.tree.command(name="rp_winner", description="Ponovo objavljuje zadnjeg RP pobjednika.")
 @app_commands.default_permissions(administrator=True)
 async def winner_rp(interaction: discord.Interaction):
     if rp_last_winner_id is None:
@@ -2441,7 +2444,7 @@ async def winner_rp(interaction: discord.Interaction):
     await interaction.response.send_message(f"✅ Objavljeno: {wm}", ephemeral=True)
     await ch.send(f"🏆 **Zadnji RP pobjednik:** {wm} 🎭")
 
-@bot.tree.command(name="winner_biz", description="Ponovo objavljuje zadnjeg BIZ pobjednika.")
+@bot.tree.command(name="biz_winner", description="Ponovo objavljuje zadnjeg BIZ pobjednika.")
 @app_commands.default_permissions(administrator=True)
 async def winner_biz(interaction: discord.Interaction):
     if biz_last_winner_id is None:
@@ -2454,7 +2457,7 @@ async def winner_biz(interaction: discord.Interaction):
     await interaction.response.send_message(f"✅ Objavljeno: {wm}", ephemeral=True)
     await ch.send(f"🏆 **Zadnji BIZ pobjednik:** {wm} 💼")
 
-@bot.tree.command(name="history_rp", description="Zadnjih 5 RP pobjednika.")
+@bot.tree.command(name="rp_history", description="Zadnjih 5 RP pobjednika.")
 @app_commands.default_permissions(administrator=True)
 async def history_rp(interaction: discord.Interaction):
     if not rp_winner_history:
@@ -2468,7 +2471,7 @@ async def history_rp(interaction: discord.Interaction):
     embed.description = "\n".join(lines)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-@bot.tree.command(name="history_biz", description="Zadnjih 5 BIZ pobjednika.")
+@bot.tree.command(name="biz_history", description="Zadnjih 5 BIZ pobjednika.")
 @app_commands.default_permissions(administrator=True)
 async def history_biz(interaction: discord.Interaction):
     if not biz_winner_history:
@@ -2482,7 +2485,7 @@ async def history_biz(interaction: discord.Interaction):
     embed.description = "\n".join(lines)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-@bot.tree.command(name="add_rp", description="Dodaj korisnika na RP listu dok je event aktivan.")
+@bot.tree.command(name="rp_add", description="Dodaj korisnika na RP listu dok je event aktivan.")
 @app_commands.describe(member="Korisnik kojeg dodaješ")
 @app_commands.default_permissions(administrator=True)
 async def add_rp(interaction: discord.Interaction, member: discord.Member):
@@ -2518,7 +2521,7 @@ async def add_rp(interaction: discord.Interaction, member: discord.Member):
     await interaction.response.send_message(f"✅ **{prefix}{member.display_name}** dodan na RP listu!", ephemeral=True)
     await update_rp_message()
 
-@bot.tree.command(name="kick_rp", description="Makni korisnika s RP liste.")
+@bot.tree.command(name="rp_kick", description="Makni korisnika s RP liste.")
 @app_commands.describe(member="Korisnik kojeg makneš")
 @app_commands.default_permissions(administrator=True)
 async def kick_rp(interaction: discord.Interaction, member: discord.Member):
@@ -2531,7 +2534,7 @@ async def kick_rp(interaction: discord.Interaction, member: discord.Member):
     await interaction.response.send_message(f"✅ **{member.display_name}** maknut/a s RP liste.", ephemeral=True)
     await update_rp_message()
 
-@bot.tree.command(name="add_biz", description="Dodaj korisnika na BIZ listu dok je event aktivan.")
+@bot.tree.command(name="biz_add", description="Dodaj korisnika na BIZ listu dok je event aktivan.")
 @app_commands.describe(member="Korisnik kojeg dodaješ")
 @app_commands.default_permissions(administrator=True)
 async def add_biz(interaction: discord.Interaction, member: discord.Member):
@@ -2567,7 +2570,7 @@ async def add_biz(interaction: discord.Interaction, member: discord.Member):
     await interaction.response.send_message(f"✅ **{prefix}{member.display_name}** dodan na BIZ listu!", ephemeral=True)
     await update_biz_message()
 
-@bot.tree.command(name="kick_biz", description="Makni korisnika s BIZ liste.")
+@bot.tree.command(name="biz_kick", description="Makni korisnika s BIZ liste.")
 @app_commands.describe(member="Korisnik kojeg makneš")
 @app_commands.default_permissions(administrator=True)
 async def kick_biz(interaction: discord.Interaction, member: discord.Member):
@@ -2600,7 +2603,7 @@ async def rp_blokira_inf(interaction: discord.Interaction):
             ephemeral=True,
         )
 
-@bot.tree.command(name="remind_rp", description="Ručno šalje podsjetnik za RP event.")
+@bot.tree.command(name="rp_remind", description="Ručno šalje podsjetnik za RP event.")
 @app_commands.default_permissions(administrator=True)
 async def remind_rp(interaction: discord.Interaction):
     ch = bot.get_channel(RP_CHANNEL_ID)
@@ -2609,7 +2612,7 @@ async def remind_rp(interaction: discord.Interaction):
     await interaction.response.send_message("✅ Podsjetnik poslan.", ephemeral=True)
     await ch.send(f"⏳ **RP lista počinje za malo — :{str(RP_START_MINUTE).zfill(2)}! Budite spremni! 🎭**")
 
-@bot.tree.command(name="remind_biz", description="Ručno šalje podsjetnik za BIZ event.")
+@bot.tree.command(name="biz_remind", description="Ručno šalje podsjetnik za BIZ event.")
 @app_commands.default_permissions(administrator=True)
 async def remind_biz(interaction: discord.Interaction):
     ch = bot.get_channel(BIZ_CHANNEL_ID)
@@ -2618,7 +2621,7 @@ async def remind_biz(interaction: discord.Interaction):
     await interaction.response.send_message("✅ Podsjetnik poslan.", ephemeral=True)
     await ch.send(f"⏳ **BIZ lista počinje za malo — :{str(BIZ_START_MINUTE).zfill(2)}! Budite spremni! 💼**")
 
-@bot.tree.command(name="vc_remind_rp", description="Odmah šalje DM svima na RP listi.")
+@bot.tree.command(name="rp_vc_remind", description="Odmah šalje DM svima na RP listi.")
 @app_commands.default_permissions(administrator=True)
 async def vc_remind_rp(interaction: discord.Interaction):
     if not rp_event_active:
@@ -2629,7 +2632,7 @@ async def vc_remind_rp(interaction: discord.Interaction):
     sent, failed = await send_rp_vc_reminders()
     await interaction.followup.send(f"✅ RP DM poslan: **{sent}** primilo, **{failed}** nije.", ephemeral=True)
 
-@bot.tree.command(name="vc_remind_biz", description="Odmah šalje DM svima na BIZ listi.")
+@bot.tree.command(name="biz_vc_remind", description="Odmah šalje DM svima na BIZ listi.")
 @app_commands.default_permissions(administrator=True)
 async def vc_remind_biz(interaction: discord.Interaction):
     if not biz_event_active:
@@ -2640,13 +2643,13 @@ async def vc_remind_biz(interaction: discord.Interaction):
     sent, failed = await send_biz_vc_reminders()
     await interaction.followup.send(f"✅ BIZ DM poslan: **{sent}** primilo, **{failed}** nije.", ephemeral=True)
 
-@bot.tree.command(name="status_rp", description="Prikazuje stanje RP eventa.")
+@bot.tree.command(name="rp_status", description="Prikazuje stanje RP eventa.")
 @app_commands.default_permissions(administrator=True)
 async def status_rp(interaction: discord.Interaction):
     now = datetime.now(TIMEZONE)
     hrs_val = ", ".join(f"{h:02d}:XX" for h in sorted(RP_HOURS)) if RP_HOURS else "*nije postavljeno*"
     if not rp_event_active:
-        desc = f"**📭 RP event nije aktivan**\nZakazani sati: {hrs_val}\nKoristi `/force_start_rp` za ručni start."
+        desc = f"**📭 RP event nije aktivan**\nZakazani sati: {hrs_val}\nKoristi `/rp_force_start` za ručni start."
         color = NH_GREY
     else:
         lock = "🔒 Zaključan" if rp_join_button_locked else f"🔓 Otvoren — zatvara se u :{str(RP_END_MINUTE).zfill(2)}"
@@ -2657,13 +2660,13 @@ async def status_rp(interaction: discord.Interaction):
     embed.set_footer(text=f"{now.strftime('%H:%M')} · Zakazani sati: {hrs_val}")
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-@bot.tree.command(name="status_biz", description="Prikazuje stanje BIZ eventa.")
+@bot.tree.command(name="biz_status", description="Prikazuje stanje BIZ eventa.")
 @app_commands.default_permissions(administrator=True)
 async def status_biz(interaction: discord.Interaction):
     now = datetime.now(TIMEZONE)
     hrs_val = ", ".join(f"{h:02d}:XX" for h in sorted(BIZ_HOURS)) if BIZ_HOURS else "*nije postavljeno*"
     if not biz_event_active:
-        desc = f"**📭 BIZ event nije aktivan**\nZakazani sati: {hrs_val}\nKoristi `/force_start_biz` za ručni start."
+        desc = f"**📭 BIZ event nije aktivan**\nZakazani sati: {hrs_val}\nKoristi `/biz_force_start` za ručni start."
         color = NH_GREY
     else:
         lock = "🔒 Zaključan" if biz_join_button_locked else f"🔓 Otvoren — zatvara se u :{str(BIZ_END_MINUTE).zfill(2)}"
@@ -2692,7 +2695,7 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
             pass
 
 
-@bot.tree.command(name="setup", description="Otvara interaktivni setup wizard za konfiguraciju bota.")
+@bot.tree.command(name="inf_setup", description="[INF] Otvara interaktivni setup wizard za konfiguraciju bota.")
 @app_commands.default_permissions(administrator=True)
 async def setup(interaction: discord.Interaction):
     cid = interaction.channel.id if interaction.channel else None
@@ -2717,7 +2720,7 @@ async def setup(interaction: discord.Interaction):
         embed.add_field(name="🎙️ VC podsjetnik", value=vc_val, inline=True)
         embed.add_field(name="⭐ Priority rola", value=pr_val, inline=True)
         embed.add_field(name="🎙️ VC lampice", value=mvc_val, inline=True)
-        embed.set_footer(text="Vidljivo samo tebi • Za INF setup koristi /setup u INF kanalu")
+        embed.set_footer(text="Vidljivo samo tebi • Za INF setup koristi /inf_setup u INF kanalu")
         await interaction.response.send_message(embed=embed, view=BIZSetupView(interaction.guild.id, interaction.user.id), ephemeral=True)
         return
 
@@ -2741,7 +2744,7 @@ async def setup(interaction: discord.Interaction):
         embed.add_field(name="🎙️ VC podsjetnik", value=vc_val, inline=True)
         embed.add_field(name="⭐ Priority rola", value=pr_val, inline=True)
         embed.add_field(name="🎙️ VC lampice", value=mvc_val, inline=True)
-        embed.set_footer(text="Vidljivo samo tebi • Za INF setup koristi /setup u INF kanalu")
+        embed.set_footer(text="Vidljivo samo tebi • Za INF setup koristi /inf_setup u INF kanalu")
         await interaction.response.send_message(embed=embed, view=RPSetupView(interaction.guild.id, interaction.user.id), ephemeral=True)
         return
 
@@ -2768,7 +2771,7 @@ async def setup(interaction: discord.Interaction):
             "Klikni **🔧 Postavi konfiguraciju** da otvoriš formu.\n"
             "Za priority rolu klikni **⭐ Priority rola**.\n"
             "INF Bot status postavi dolje u izborniku.\n\n"
-            "💡 *Za BIZ setup koristi /setup u BIZ kanalu, za RP u RP kanalu.*"
+            "💡 *Za BIZ setup koristi /inf_setup u BIZ kanalu, za RP u RP kanalu.*"
         ),
         color=NH_CREAM,
     )
@@ -2781,19 +2784,19 @@ async def setup(interaction: discord.Interaction):
     embed.add_field(name="🔛 INF Bot", value=inf_val, inline=True)
     embed.add_field(name="🚫 Blacklista", value=f"{len(BLACKLIST_USERS)} korisnika", inline=True)
     embed.add_field(name="🔨 Banirani", value=f"{len(BAN_USERS)} korisnika", inline=True)
-    embed.set_footer(text="Vidljivo samo tebi • /helpinf za sve komande")
+    embed.set_footer(text="Vidljivo samo tebi • /inf_help za sve komande")
 
     view = SetupView(guild_id=interaction.guild.id, author_id=interaction.user.id)
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
-@bot.tree.command(name="force_start", description="Ručno pokreće event odmah.")
+@bot.tree.command(name="inf_force_start", description="[INF] Ručno pokreće event odmah.")
 @app_commands.default_permissions(administrator=True)
 async def force_start(interaction: discord.Interaction):
     global event_active, join_button_locked, current_participants, current_event_message
 
     if event_active:
-        await interaction.response.send_message("⚠️ Event već traje! Pričekaj kraj ili koristi /force_end.", ephemeral=True)
+        await interaction.response.send_message("⚠️ Event već traje! Pričekaj kraj ili koristi /inf_force_end.", ephemeral=True)
         return
 
     await interaction.response.defer(ephemeral=True)
@@ -2864,7 +2867,7 @@ async def force_start(interaction: discord.Interaction):
     asyncio.create_task(_auto_end())
 
 
-@bot.tree.command(name="force_end", description="Zaustavlja trenutni event bez izvlačenja pobjednika.")
+@bot.tree.command(name="inf_force_end", description="[INF] Zaustavlja trenutni event bez izvlačenja pobjednika.")
 @app_commands.default_permissions(administrator=True)
 async def force_end(interaction: discord.Interaction):
     global event_active, current_participants, join_button_locked
@@ -2892,7 +2895,7 @@ async def ping(interaction: discord.Interaction):
     await interaction.response.send_message(f"🏓 Pong! Latencija: **{latency}ms**", ephemeral=True)
 
 
-@bot.tree.command(name="remind", description="Ručno šalje podsjetnik u event kanal da lista uskoro počinje.")
+@bot.tree.command(name="inf_remind", description="[INF] Ručno šalje podsjetnik u event kanal da lista uskoro počinje.")
 @app_commands.default_permissions(administrator=True)
 async def remind(interaction: discord.Interaction):
     channel = bot.get_channel(CHANNEL_ID)
@@ -2903,43 +2906,51 @@ async def remind(interaction: discord.Interaction):
     await channel.send(f"⏳ **INF lista počinje za malo — :{str(START_MINUTE).zfill(2)}! Budite spremni! 🚛**")
 
 
-@bot.tree.command(name="infon", description="Bot piše u kanal: INF bot uključen budite spremni.")
+async def _inf_announce(interaction: discord.Interaction, text: str):
+    """Pošalji poruku u INF kanal (ili ovaj kanal ako INF kanal nije postavljen); admin dobije jasnu grešku ako ne uspije."""
+    await interaction.response.defer(ephemeral=True)
+    target = await _get_channel(CHANNEL_ID) or interaction.channel
+    try:
+        await target.send(text)
+    except discord.Forbidden:
+        await interaction.followup.send(f"❌ Bot nema dozvolu pisati u {getattr(target, 'mention', 'taj kanal')} (treba View Channel + Send Messages).", ephemeral=True)
+        return False
+    except Exception as e:
+        await interaction.followup.send(f"❌ Slanje nije uspjelo: {e}", ephemeral=True)
+        return False
+    await interaction.followup.send(f"✅ Poruka poslana u {getattr(target, 'mention', 'kanal')}.", ephemeral=True)
+    return True
+
+
+@bot.tree.command(name="infon", description="[INF] Bot piše u kanal: INF bot uključen budite spremni.")
 @app_commands.default_permissions(administrator=True)
 async def infon(interaction: discord.Interaction):
     global inf_bot_online
     inf_bot_online = True
-    await interaction.response.defer(ephemeral=True)
-    target = await _get_channel(CHANNEL_ID) or interaction.channel
-    await target.send("INF bot uključen budite spremni.")
-    await interaction.followup.send("✅ Poruka poslana.", ephemeral=True)
+    await _inf_announce(interaction, "INF bot uključen budite spremni.")
 
 
-@bot.tree.command(name="infof", description="Bot piše u kanal: Nažalost izgubili smo neformalnu...")
+@bot.tree.command(name="infoff", description="[INF] Bot piše u kanal: Nažalost izgubili smo neformalnu...")
 @app_commands.default_permissions(administrator=True)
-async def infof(interaction: discord.Interaction):
+async def infoff(interaction: discord.Interaction):
     global inf_bot_online
     inf_bot_online = False
-    await interaction.response.defer(ephemeral=True)
-    target = await _get_channel(CHANNEL_ID) or interaction.channel
-    await target.send("Nažalost izgubili smo neformalnu bot neradi dok ne dobijemo neformalnu nazad")
-    await interaction.followup.send("✅ Poruka poslana.", ephemeral=True)
+    await _inf_announce(interaction, "Nažalost izgubili smo neformalnu bot neradi dok ne dobijemo neformalnu nazad")
 
 
-@bot.tree.command(name="infostatus", description="Prikazuje trenutni INF bot status u kanalu.")
+@bot.tree.command(name="infostatus", description="[INF] Prikazuje trenutni INF bot status u kanalu.")
 @app_commands.default_permissions(administrator=True)
 async def infostatus(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True)
-    target = await _get_channel(CHANNEL_ID) or interaction.channel
     if inf_bot_online is True:
-        await target.send("✅ **INF bot status:** Uključen — budite spremni.")
+        text = "✅ **INF bot status:** Uključen — budite spremni."
     elif inf_bot_online is False:
-        await target.send("❌ **INF bot status:** Isključen — nema neformalne dok ne dobijemo nazad.")
+        text = "❌ **INF bot status:** Isključen — nema neformalne dok ne dobijemo nazad."
     else:
-        await target.send("❓ **INF bot status:** Status još nije postavljen. Koristi `/infon` ili `/infof`.")
-    await interaction.followup.send("✅ Status objavljen.", ephemeral=True)
+        text = "❓ **INF bot status:** Status još nije postavljen. Koristi `/infon` ili `/infoff`."
+    await _inf_announce(interaction, text)
 
 
-@bot.tree.command(name="reroll", description="Bira novog pobjednika — lista ostaje ista.")
+@bot.tree.command(name="inf_reroll", description="[INF] Bira novog pobjednika — lista ostaje ista.")
 @app_commands.default_permissions(administrator=True)
 async def reroll(interaction: discord.Interaction):
     global last_winner_id
@@ -2965,7 +2976,7 @@ async def reroll(interaction: discord.Interaction):
         await _inf_send(channel, f"🔁 **REROLL!** Novi vozač Ammo Cara je... {winner_mention} 🎉🚗💨")
 
 
-@bot.tree.command(name="add", description="Dodaj korisnika na listu dok je event aktivan.")
+@bot.tree.command(name="inf_add", description="[INF] Dodaj korisnika na listu dok je event aktivan.")
 @app_commands.describe(member="Korisnik kojeg dodaješ na listu")
 async def add_to_list(interaction: discord.Interaction, member: discord.Member):
     global current_participants, join_button_locked
@@ -3021,7 +3032,7 @@ async def add_to_list(interaction: discord.Interaction, member: discord.Member):
     await update_message()
 
 
-@bot.tree.command(name="kick_from_list", description="Makni korisnika s liste dok je event aktivan.")
+@bot.tree.command(name="inf_kick", description="[INF] Makni korisnika s liste dok je event aktivan.")
 @app_commands.describe(member="Korisnik kojeg makneš s liste")
 @app_commands.default_permissions(administrator=True)
 async def kick_from_list(interaction: discord.Interaction, member: discord.Member):
@@ -3090,14 +3101,14 @@ async def banlist(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-@bot.tree.command(name="set_channel", description="Postavi kanal za event.")
+@bot.tree.command(name="inf_set_channel", description="[INF] Postavi kanal za event.")
 @app_commands.describe(channel="Kanal u koji bot šalje event listu")
 @app_commands.default_permissions(administrator=True)
 async def set_channel(interaction: discord.Interaction, channel: discord.TextChannel):
     global CHANNEL_ID
 
     if event_active:
-        await interaction.response.send_message("⚠️ Ne možeš mijenjati kanal dok event traje. Koristi `/force_end` prvo.", ephemeral=True)
+        await interaction.response.send_message("⚠️ Ne možeš mijenjati kanal dok event traje. Koristi `/inf_force_end` prvo.", ephemeral=True)
         return
 
     old_id = CHANNEL_ID
@@ -3111,7 +3122,7 @@ async def set_channel(interaction: discord.Interaction, channel: discord.TextCha
     )
 
 
-@bot.tree.command(name="set_slots", description="Mijenja max broj mjesta na listi.")
+@bot.tree.command(name="inf_set_slots", description="[INF] Mijenja max broj mjesta na listi.")
 @app_commands.describe(number="Broj mjesta (1–100)")
 @app_commands.default_permissions(administrator=True)
 async def set_slots(interaction: discord.Interaction, number: int):
@@ -3122,7 +3133,7 @@ async def set_slots(interaction: discord.Interaction, number: int):
         return
 
     if event_active:
-        await interaction.response.send_message("⚠️ Ne možeš mijenjati slotove dok event traje. Koristi `/force_end` prvo.", ephemeral=True)
+        await interaction.response.send_message("⚠️ Ne možeš mijenjati slotove dok event traje. Koristi `/inf_force_end` prvo.", ephemeral=True)
         return
 
     old = MAX_SLOTS
@@ -3131,7 +3142,7 @@ async def set_slots(interaction: discord.Interaction, number: int):
     await interaction.response.send_message(f"✅ Max slotova: **{old}** → **{MAX_SLOTS}**", ephemeral=True)
 
 
-@bot.tree.command(name="set_priority_role", description="Postavi priority rolu — ti korisnici izbacuju zadnjeg bez role kad je lista puna.")
+@bot.tree.command(name="inf_set_priority_role", description="[INF] Postavi priority rolu — ti korisnici izbacuju zadnjeg bez role kad je lista puna.")
 @app_commands.describe(role="Rola s prioritetom")
 @app_commands.default_permissions(administrator=True)
 async def set_priority_role(interaction: discord.Interaction, role: discord.Role):
@@ -3145,7 +3156,7 @@ async def set_priority_role(interaction: discord.Interaction, role: discord.Role
     )
 
 
-@bot.tree.command(name="clear_priority_role", description="Uklanja priority rolu — svi su ravnopravni.")
+@bot.tree.command(name="inf_clear_priority_role", description="[INF] Uklanja priority rolu — svi su ravnopravni.")
 @app_commands.default_permissions(administrator=True)
 async def clear_priority_role(interaction: discord.Interaction):
     global PRIORITY_ROLE_ID
@@ -3208,7 +3219,7 @@ async def blacklist_list(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-@bot.tree.command(name="set_monitor_vc", description="Prati koji su učesnici u VC-u — lampice 🟢/🔴 pored imena.")
+@bot.tree.command(name="inf_set_monitor_vc", description="[INF] Prati koji su učesnici u VC-u — lampice 🟢/🔴 pored imena.")
 @app_commands.describe(channel="Voice kanal za praćenje")
 @app_commands.default_permissions(administrator=True)
 async def set_monitor_vc(interaction: discord.Interaction, channel: discord.VoiceChannel):
@@ -3221,7 +3232,7 @@ async def set_monitor_vc(interaction: discord.Interaction, channel: discord.Voic
     )
 
 
-@bot.tree.command(name="set_monitor_vc_off", description="Isključuje VC lampice s liste.")
+@bot.tree.command(name="inf_set_monitor_vc_off", description="[INF] Isključuje VC lampice s liste.")
 @app_commands.default_permissions(administrator=True)
 async def set_monitor_vc_off(interaction: discord.Interaction):
     global MONITOR_VC_ID
@@ -3233,7 +3244,7 @@ async def set_monitor_vc_off(interaction: discord.Interaction):
     await interaction.response.send_message("✅ VC praćenje isključeno — lampice više neće biti prikazane.", ephemeral=True)
 
 
-@bot.tree.command(name="set_vc_remind", description="Automatski DM svima na listi da moraju biti u INF VC.")
+@bot.tree.command(name="inf_set_vc_remind", description="[INF] Automatski DM svima na listi da moraju biti u INF VC.")
 @app_commands.describe(minute="Minuta u kojoj se šalje DM (0–59)")
 @app_commands.default_permissions(administrator=True)
 async def set_vc_remind(interaction: discord.Interaction, minute: int):
@@ -3254,7 +3265,7 @@ async def set_vc_remind(interaction: discord.Interaction, minute: int):
     )
 
 
-@bot.tree.command(name="set_vc_remind_off", description="Isključuje automatski VC podsjetnik.")
+@bot.tree.command(name="inf_set_vc_remind_off", description="[INF] Isključuje automatski VC podsjetnik.")
 @app_commands.default_permissions(administrator=True)
 async def set_vc_remind_off(interaction: discord.Interaction):
     global VC_REMIND_MINUTE
@@ -3266,7 +3277,7 @@ async def set_vc_remind_off(interaction: discord.Interaction):
     await interaction.response.send_message("✅ VC podsjetnik isključen.", ephemeral=True)
 
 
-@bot.tree.command(name="vc_remind", description="Odmah šalje DM podsjetnik svima na listi.")
+@bot.tree.command(name="inf_vc_remind", description="[INF] Odmah šalje DM podsjetnik svima na listi.")
 @app_commands.default_permissions(administrator=True)
 async def vc_remind_now(interaction: discord.Interaction):
     if not event_active:
@@ -3283,7 +3294,7 @@ async def vc_remind_now(interaction: discord.Interaction):
     )
 
 
-@bot.tree.command(name="set_time", description="Mijenja minute starta i kraja eventa.")
+@bot.tree.command(name="inf_set_time", description="[INF] Mijenja minute starta i kraja eventa.")
 @app_commands.describe(start="Minuta starta (0–59)", end="Minuta kraja (0–59)")
 @app_commands.default_permissions(administrator=True)
 async def set_time(interaction: discord.Interaction, start: int, end: int):
@@ -3298,7 +3309,7 @@ async def set_time(interaction: discord.Interaction, start: int, end: int):
         return
 
     if event_active:
-        await interaction.response.send_message("⚠️ Ne možeš mijenjati vrijeme dok event traje. Koristi `/force_end` prvo.", ephemeral=True)
+        await interaction.response.send_message("⚠️ Ne možeš mijenjati vrijeme dok event traje. Koristi `/inf_force_end` prvo.", ephemeral=True)
         return
 
     old_start, old_end = START_MINUTE, END_MINUTE
@@ -3314,7 +3325,7 @@ async def set_time(interaction: discord.Interaction, start: int, end: int):
     )
 
 
-@bot.tree.command(name="set_draw", description="Mijenja minutu izvlačenja pobjednika.")
+@bot.tree.command(name="inf_set_draw", description="[INF] Mijenja minutu izvlačenja pobjednika.")
 @app_commands.describe(minute="Minuta izvlačenja — mora biti između starta i kraja")
 @app_commands.default_permissions(administrator=True)
 async def set_draw(interaction: discord.Interaction, minute: int):
@@ -3333,7 +3344,7 @@ async def set_draw(interaction: discord.Interaction, minute: int):
         return
 
     if event_active:
-        await interaction.response.send_message("⚠️ Ne možeš mijenjati vrijeme izvlačenja dok event traje. Koristi `/force_end` prvo.", ephemeral=True)
+        await interaction.response.send_message("⚠️ Ne možeš mijenjati vrijeme izvlačenja dok event traje. Koristi `/inf_force_end` prvo.", ephemeral=True)
         return
 
     old = DRAW_MINUTE
@@ -3346,7 +3357,7 @@ async def set_draw(interaction: discord.Interaction, minute: int):
     )
 
 
-@bot.tree.command(name="winner", description="Ponovo objavljuje zadnjeg pobjednika u event kanalu.")
+@bot.tree.command(name="inf_winner", description="[INF] Ponovo objavljuje zadnjeg pobjednika u event kanalu.")
 @app_commands.default_permissions(administrator=True)
 async def winner_cmd(interaction: discord.Interaction):
     if last_winner_id is None:
@@ -3362,7 +3373,7 @@ async def winner_cmd(interaction: discord.Interaction):
     await channel.send(f"🏆 **Podsjetnik — zadnji pobjednik Ammo Cara:** {winner_mention} 🚗💨")
 
 
-@bot.tree.command(name="clearwinner", description="Resetira zabilježenog pobjednika.")
+@bot.tree.command(name="inf_clearwinner", description="[INF] Resetira zabilježenog pobjednika.")
 @app_commands.default_permissions(administrator=True)
 async def clearwinner(interaction: discord.Interaction):
     global last_winner_id
@@ -3373,7 +3384,7 @@ async def clearwinner(interaction: discord.Interaction):
     await interaction.response.send_message("✅ Zadnji pobjednik resetiran.", ephemeral=True)
 
 
-@bot.tree.command(name="history", description="Prikazuje zadnjih 5 pobjednika.")
+@bot.tree.command(name="inf_history", description="[INF] Prikazuje zadnjih 5 pobjednika.")
 @app_commands.default_permissions(administrator=True)
 async def history(interaction: discord.Interaction):
     if not winner_history:
@@ -3389,7 +3400,7 @@ async def history(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-@bot.tree.command(name="status", description="Pokazuje stanje eventa — koliko je ljudi ušlo i kada kreće sljedeći.")
+@bot.tree.command(name="inf_status", description="[INF] Pokazuje stanje eventa — koliko je ljudi ušlo i kada kreće sljedeći.")
 @app_commands.default_permissions(administrator=True)
 async def status(interaction: discord.Interaction):
     now = datetime.now(TIMEZONE)
@@ -3400,7 +3411,7 @@ async def status(interaction: discord.Interaction):
         desc = (
             f"**📭 No event running**\n"
             f"Next auto-start in **{mins_until} minute(s)** (at :{str(START_MINUTE).zfill(2)})\n\n"
-            f"Use `/force_start` to start one now."
+            f"Use `/inf_force_start` to start one now."
         )
         color = NH_GREY
     else:
@@ -3433,7 +3444,7 @@ async def status(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-@bot.tree.command(name="helpinf", description="Prikazuje sve admin komande.")
+@bot.tree.command(name="inf_help", description="[INF] Prikazuje sve admin komande.")
 @app_commands.default_permissions(administrator=True)
 async def help_command(interaction: discord.Interaction):
     priority_status = "nije postavljen"
@@ -3444,21 +3455,21 @@ async def help_command(interaction: discord.Interaction):
     vc_remind_val = f":{str(VC_REMIND_MINUTE).zfill(2)}" if VC_REMIND_MINUTE is not None else "*(isključeno)*"
 
     embed1 = NHEmbed(title="Nighthawk — INF Komande (1/2)", color=NH_CREAM)
-    embed1.add_field(name="/setup", value="Interaktivni wizard — postavi kanal, vremena, slotove, VC podsjetnik i priority rolu kroz formu.", inline=False)
-    embed1.add_field(name="/force_start", value="Ručno pokreće event odmah.", inline=False)
-    embed1.add_field(name="/force_end", value="Zaustavlja trenutni event bez izvlačenja pobjednika.", inline=False)
-    embed1.add_field(name="/reroll", value="Bira novog pobjednika — lista ostaje ista.", inline=False)
-    embed1.add_field(name="/winner", value="Ponovo objavljuje zadnjeg pobjednika u event kanalu.", inline=False)
-    embed1.add_field(name="/clearwinner", value="Resetira zabilježenog pobjednika.", inline=False)
-    embed1.add_field(name="/history", value="Prikazuje zadnjih 5 pobjednika s vremenima.", inline=False)
-    embed1.add_field(name="/remind", value="Ručno šalje podsjetnik u event kanal da lista uskoro počinje.", inline=False)
+    embed1.add_field(name="/inf_setup", value="Interaktivni wizard — postavi kanal, vremena, slotove, VC podsjetnik i priority rolu kroz formu.", inline=False)
+    embed1.add_field(name="/inf_force_start", value="Ručno pokreće event odmah.", inline=False)
+    embed1.add_field(name="/inf_force_end", value="Zaustavlja trenutni event bez izvlačenja pobjednika.", inline=False)
+    embed1.add_field(name="/inf_reroll", value="Bira novog pobjednika — lista ostaje ista.", inline=False)
+    embed1.add_field(name="/inf_winner", value="Ponovo objavljuje zadnjeg pobjednika u event kanalu.", inline=False)
+    embed1.add_field(name="/inf_clearwinner", value="Resetira zabilježenog pobjednika.", inline=False)
+    embed1.add_field(name="/inf_history", value="Prikazuje zadnjih 5 pobjednika s vremenima.", inline=False)
+    embed1.add_field(name="/inf_remind", value="Ručno šalje podsjetnik u event kanal da lista uskoro počinje.", inline=False)
     embed1.add_field(name="/infon", value="Bot piše u kanal: **INF bot uključen budite spremni.**", inline=False)
-    embed1.add_field(name="/infof", value="Bot piše u kanal: **Nažalost izgubili smo neformalnu...**", inline=False)
+    embed1.add_field(name="/infoff", value="Bot piše u kanal: **Nažalost izgubili smo neformalnu...**", inline=False)
     embed1.add_field(name="/infostatus", value="Prikazuje trenutni status bota u kanalu.", inline=False)
     embed1.add_field(name="/ping", value="Provjeri radi li bot i latenciju. *(svi mogu koristiti)*", inline=False)
-    embed1.add_field(name="/status", value="Pokazuje stanje eventa — koliko je ljudi ušlo i kada kreće sljedeći.", inline=False)
-    embed1.add_field(name="/add @korisnik", value="Dodaj korisnika na listu dok je event aktivan.", inline=False)
-    embed1.add_field(name="/kick_from_list @korisnik", value="Makni korisnika s liste dok je event aktivan.", inline=False)
+    embed1.add_field(name="/inf_status", value="Pokazuje stanje eventa — koliko je ljudi ušlo i kada kreće sljedeći.", inline=False)
+    embed1.add_field(name="/inf_add @korisnik", value="Dodaj korisnika na listu dok je event aktivan.", inline=False)
+    embed1.add_field(name="/inf_kick @korisnik", value="Makni korisnika s liste dok je event aktivan.", inline=False)
     embed1.set_footer(text="Nastavak u sljedećoj poruci →")
 
     embed2 = NHEmbed(title="Nighthawk — INF Komande (2/2)", color=NH_CREAM)
@@ -3468,21 +3479,21 @@ async def help_command(interaction: discord.Interaction):
     embed2.add_field(name="/blacklist_user @korisnik", value="Može ući na listu ali neće biti biran za Ammo Car.", inline=False)
     embed2.add_field(name="/unblacklist_user @korisnik", value="Uklanja korisnika s blackliste.", inline=False)
     embed2.add_field(name="/blacklist_list", value="Prikaži sve na blacklisti.", inline=False)
-    embed2.add_field(name="/set_time start end", value=f"Mijenja minute starta i kraja. Trenutno: :{str(START_MINUTE).zfill(2)} → :{str(END_MINUTE).zfill(2)}", inline=False)
-    embed2.add_field(name="/set_draw minute", value=f"Mijenja minutu izvlačenja. Trenutno: :{str(DRAW_MINUTE).zfill(2)}", inline=False)
-    embed2.add_field(name="/set_slots number", value=f"Mijenja max broj mjesta. Trenutno: {MAX_SLOTS}", inline=False)
-    embed2.add_field(name="/set_channel #kanal", value="Mijenja kanal za event.", inline=False)
-    embed2.add_field(name="/set_priority_role @Rol", value=f"Rol koji izbacuje zadnjeg bez njega kad je lista puna. Trenutno: **{priority_status}**", inline=False)
-    embed2.add_field(name="/clear_priority_role", value="Uklanja priority rol.", inline=False)
+    embed2.add_field(name="/inf_set_time start end", value=f"Mijenja minute starta i kraja. Trenutno: :{str(START_MINUTE).zfill(2)} → :{str(END_MINUTE).zfill(2)}", inline=False)
+    embed2.add_field(name="/inf_set_draw minute", value=f"Mijenja minutu izvlačenja. Trenutno: :{str(DRAW_MINUTE).zfill(2)}", inline=False)
+    embed2.add_field(name="/inf_set_slots number", value=f"Mijenja max broj mjesta. Trenutno: {MAX_SLOTS}", inline=False)
+    embed2.add_field(name="/inf_set_channel #kanal", value="Mijenja kanal za event.", inline=False)
+    embed2.add_field(name="/inf_set_priority_role @Rol", value=f"Rol koji izbacuje zadnjeg bez njega kad je lista puna. Trenutno: **{priority_status}**", inline=False)
+    embed2.add_field(name="/inf_clear_priority_role", value="Uklanja priority rol.", inline=False)
     monitor_vc_val = "*(isključeno)*"
     if MONITOR_VC_ID:
         mvc = interaction.guild.get_channel(MONITOR_VC_ID)
         monitor_vc_val = f"**{mvc.name}**" if mvc else f"ID {MONITOR_VC_ID}"
-    embed2.add_field(name="/set_vc_remind minute", value=f"Automatski DM svima na listi — biti u INF VC do :{str(DRAW_MINUTE).zfill(2)}. Trenutno: **{vc_remind_val}**", inline=False)
-    embed2.add_field(name="/set_vc_remind_off", value="Isključuje automatski VC podsjetnik.", inline=False)
-    embed2.add_field(name="/vc_remind", value="Odmah šalje DM podsjetnik svima na listi.", inline=False)
-    embed2.add_field(name="/set_monitor_vc #kanal", value=f"Prati koji su učesnici u VC-u — 🟢 u kanalu, 🔴 nije. Trenutno: {monitor_vc_val}", inline=False)
-    embed2.add_field(name="/set_monitor_vc_off", value="Isključuje VC lampice s liste.", inline=False)
+    embed2.add_field(name="/inf_set_vc_remind minute", value=f"Automatski DM svima na listi — biti u INF VC do :{str(DRAW_MINUTE).zfill(2)}. Trenutno: **{vc_remind_val}**", inline=False)
+    embed2.add_field(name="/inf_set_vc_remind_off", value="Isključuje automatski VC podsjetnik.", inline=False)
+    embed2.add_field(name="/inf_vc_remind", value="Odmah šalje DM podsjetnik svima na listi.", inline=False)
+    embed2.add_field(name="/inf_set_monitor_vc #kanal", value=f"Prati koji su učesnici u VC-u — 🟢 u kanalu, 🔴 nije. Trenutno: {monitor_vc_val}", inline=False)
+    embed2.add_field(name="/inf_set_monitor_vc_off", value="Isključuje VC lampice s liste.", inline=False)
     embed2.set_footer(text="Sve admin komande vidljive su samo tebi.")
 
     await interaction.response.send_message(embed=embed1, ephemeral=True)
@@ -4314,21 +4325,21 @@ async def bonussetup(interaction: discord.Interaction):
 def _help_embeds_general():
     e1 = NHEmbed(title="Nighthawk — Sve komande (1/2)", color=NH_CREAM)
     e1.add_field(name="🔹 Opće", value=(
-        "`/help` — ova poruka\n`/helpinf` `/helprp` `/helpbiz` `/bonushelp` — detalji po eventu\n"
+        "`/help` — ova poruka\n`/inf_help` `/rp_help` `/biz_help` `/bonushelp` — detalji po eventu\n"
         "`/ping` — latencija bota\n`/evtab` — trenutna tablica bonusa"), inline=False)
     e1.add_field(name="🚛 INF", value=(
-        "`/setup` `/force_start` `/force_end` `/reroll` `/winner` `/clearwinner` `/history`\n"
-        "`/status` `/infostatus` `/remind` `/infon` `/infof` `/add` `/kick_from_list`\n"
+        "`/inf_setup` `/inf_force_start` `/inf_force_end` `/inf_reroll` `/inf_winner` `/inf_clearwinner` `/inf_history`\n"
+        "`/inf_status` `/infostatus` `/inf_remind` `/infon` `/infoff` `/inf_add` `/inf_kick`\n"
         "`/ban` `/unban` `/banlist` `/blacklist_user` `/unblacklist_user` `/blacklist_list`\n"
-        "`/set_channel` `/set_slots` `/set_time` `/set_draw` `/set_priority_role` `/clear_priority_role`\n"
-        "`/set_vc_remind` `/set_vc_remind_off` `/vc_remind` `/set_monitor_vc` `/set_monitor_vc_off`"), inline=False)
+        "`/inf_set_channel` `/inf_set_slots` `/inf_set_time` `/inf_set_draw` `/inf_set_priority_role` `/inf_clear_priority_role`\n"
+        "`/inf_set_vc_remind` `/inf_set_vc_remind_off` `/inf_vc_remind` `/inf_set_monitor_vc` `/inf_set_monitor_vc_off`"), inline=False)
     e2 = NHEmbed(title="Nighthawk — Sve komande (2/2)", color=NH_CREAM)
     e2.add_field(name="🎭 RP", value=(
-        "`/setuprp` `/force_start_rp` `/force_end_rp` `/reroll_rp` `/winner_rp` `/history_rp`\n"
-        "`/status_rp` `/remind_rp` `/vc_remind_rp` `/add_rp` `/kick_rp` `/rp_blokira_inf`"), inline=False)
+        "`/rp_setup` `/rp_force_start` `/rp_force_end` `/rp_reroll` `/rp_winner` `/rp_history`\n"
+        "`/rp_status` `/rp_remind` `/rp_vc_remind` `/rp_add` `/rp_kick` `/rp_blokira_inf`"), inline=False)
     e2.add_field(name="💼 BIZ", value=(
-        "`/setupbiz` `/force_start_biz` `/force_end_biz` `/reroll_biz` `/winner_biz` `/history_biz`\n"
-        "`/status_biz` `/remind_biz` `/vc_remind_biz` `/add_biz` `/kick_biz`"), inline=False)
+        "`/biz_setup` `/biz_force_start` `/biz_force_end` `/biz_reroll` `/biz_winner` `/biz_history`\n"
+        "`/biz_status` `/biz_remind` `/biz_vc_remind` `/biz_add` `/biz_kick`"), inline=False)
     e2.add_field(name="🔮 Sfere", value=(
         "`/sfere_panel` — objavi poruku s gumbima **Napad** i **Obrana** (klik pita kad se lista zatvara i pokreće je)\n"
         "`/sfere_prio` `/sfere_prio_off` — priority rola · `/sfere_kraj` — obriši liste u ovom kanalu\n"
@@ -4351,40 +4362,40 @@ def _help_embeds_general():
 async def help_all(interaction: discord.Interaction):
     await interaction.response.send_message(embeds=_help_embeds_general(), ephemeral=True)
 
-@bot.tree.command(name="helprp", description="Prikazuje sve RP komande.")
+@bot.tree.command(name="rp_help", description="Prikazuje sve RP komande.")
 @app_commands.default_permissions(administrator=True)
 async def helprp(interaction: discord.Interaction):
     e = NHEmbed(title="Nighthawk — RP Komande", color=NH_CREAM)
-    e.add_field(name="/setuprp", value="Interaktivni wizard — kanal, vremena, slotovi, sati (max 3x/dan), priority rola, VC lampice.", inline=False)
-    e.add_field(name="/force_start_rp", value="Ručno pokreće RP event odmah.", inline=False)
-    e.add_field(name="/force_end_rp", value="Zaustavlja RP event bez izvlačenja.", inline=False)
-    e.add_field(name="/reroll_rp", value="Bira novog RP pobjednika — lista ostaje ista.", inline=False)
-    e.add_field(name="/winner_rp", value="Ponovo objavljuje zadnjeg RP pobjednika.", inline=False)
-    e.add_field(name="/history_rp", value="Zadnjih 5 RP pobjednika.", inline=False)
-    e.add_field(name="/status_rp", value="Stanje RP eventa.", inline=False)
-    e.add_field(name="/add_rp @korisnik", value="Dodaj korisnika na RP listu dok je event aktivan.", inline=False)
-    e.add_field(name="/kick_rp @korisnik", value="Makni korisnika s RP liste.", inline=False)
-    e.add_field(name="/remind_rp", value="Ručno šalje podsjetnik za RP event.", inline=False)
-    e.add_field(name="/vc_remind_rp", value="Odmah šalje DM svima na RP listi.", inline=False)
+    e.add_field(name="/rp_setup", value="Interaktivni wizard — kanal, vremena, slotovi, sati (max 3x/dan), priority rola, VC lampice.", inline=False)
+    e.add_field(name="/rp_force_start", value="Ručno pokreće RP event odmah.", inline=False)
+    e.add_field(name="/rp_force_end", value="Zaustavlja RP event bez izvlačenja.", inline=False)
+    e.add_field(name="/rp_reroll", value="Bira novog RP pobjednika — lista ostaje ista.", inline=False)
+    e.add_field(name="/rp_winner", value="Ponovo objavljuje zadnjeg RP pobjednika.", inline=False)
+    e.add_field(name="/rp_history", value="Zadnjih 5 RP pobjednika.", inline=False)
+    e.add_field(name="/rp_status", value="Stanje RP eventa.", inline=False)
+    e.add_field(name="/rp_add @korisnik", value="Dodaj korisnika na RP listu dok je event aktivan.", inline=False)
+    e.add_field(name="/rp_kick @korisnik", value="Makni korisnika s RP liste.", inline=False)
+    e.add_field(name="/rp_remind", value="Ručno šalje podsjetnik za RP event.", inline=False)
+    e.add_field(name="/rp_vc_remind", value="Odmah šalje DM svima na RP listi.", inline=False)
     e.add_field(name="/rp_blokira_inf", value=f"Uključi/isključi: kad je RP sat aktivan, INF se ne pokreće. Trenutno: **{'DA' if RP_BLOCKS_INF else 'NE'}**", inline=False)
     e.set_footer(text="Sve admin komande vidljive su samo tebi.")
     await interaction.response.send_message(embed=e, ephemeral=True)
 
-@bot.tree.command(name="helpbiz", description="Prikazuje sve BIZ komande.")
+@bot.tree.command(name="biz_help", description="Prikazuje sve BIZ komande.")
 @app_commands.default_permissions(administrator=True)
 async def helpbiz(interaction: discord.Interaction):
     e = NHEmbed(title="Nighthawk — BIZ Komande", color=NH_CREAM)
-    e.add_field(name="/setupbiz", value="Interaktivni wizard — kanal, vremena, slotovi, sati (max 2x/dan), priority rola, VC lampice.", inline=False)
-    e.add_field(name="/force_start_biz", value="Ručno pokreće BIZ event odmah.", inline=False)
-    e.add_field(name="/force_end_biz", value="Zaustavlja BIZ event bez izvlačenja.", inline=False)
-    e.add_field(name="/reroll_biz", value="Bira novog BIZ pobjednika — lista ostaje ista.", inline=False)
-    e.add_field(name="/winner_biz", value="Ponovo objavljuje zadnjeg BIZ pobjednika.", inline=False)
-    e.add_field(name="/history_biz", value="Zadnjih 5 BIZ pobjednika.", inline=False)
-    e.add_field(name="/status_biz", value="Stanje BIZ eventa.", inline=False)
-    e.add_field(name="/add_biz @korisnik", value="Dodaj korisnika na BIZ listu dok je event aktivan.", inline=False)
-    e.add_field(name="/kick_biz @korisnik", value="Makni korisnika s BIZ liste.", inline=False)
-    e.add_field(name="/remind_biz", value="Ručno šalje podsjetnik za BIZ event.", inline=False)
-    e.add_field(name="/vc_remind_biz", value="Odmah šalje DM svima na BIZ listi.", inline=False)
+    e.add_field(name="/biz_setup", value="Interaktivni wizard — kanal, vremena, slotovi, sati (max 2x/dan), priority rola, VC lampice.", inline=False)
+    e.add_field(name="/biz_force_start", value="Ručno pokreće BIZ event odmah.", inline=False)
+    e.add_field(name="/biz_force_end", value="Zaustavlja BIZ event bez izvlačenja.", inline=False)
+    e.add_field(name="/biz_reroll", value="Bira novog BIZ pobjednika — lista ostaje ista.", inline=False)
+    e.add_field(name="/biz_winner", value="Ponovo objavljuje zadnjeg BIZ pobjednika.", inline=False)
+    e.add_field(name="/biz_history", value="Zadnjih 5 BIZ pobjednika.", inline=False)
+    e.add_field(name="/biz_status", value="Stanje BIZ eventa.", inline=False)
+    e.add_field(name="/biz_add @korisnik", value="Dodaj korisnika na BIZ listu dok je event aktivan.", inline=False)
+    e.add_field(name="/biz_kick @korisnik", value="Makni korisnika s BIZ liste.", inline=False)
+    e.add_field(name="/biz_remind", value="Ručno šalje podsjetnik za BIZ event.", inline=False)
+    e.add_field(name="/biz_vc_remind", value="Odmah šalje DM svima na BIZ listi.", inline=False)
     e.set_footer(text="Sve admin komande vidljive su samo tebi.")
     await interaction.response.send_message(embed=e, ephemeral=True)
 
@@ -5690,7 +5701,7 @@ async def on_ready():
     if synced_guilds == 0:
         print("⚠️ Nijedan guild nije sinkroniziran! Koristi !sync u Discord kanalu.")
     if CHANNEL_ID == 0:
-        print("⚠️  Kanal nije postavljen. Admin treba koristiti /set_channel na serveru.")
+        print("⚠️  Kanal nije postavljen. Admin treba koristiti /inf_set_channel na serveru.")
     else:
         print(f"📡 CHANNEL TARGET: {CHANNEL_ID}")
         print(f"🚛 BOT AKTIVAN — sljedeći event u :{str(START_MINUTE).zfill(2)}")
@@ -5740,11 +5751,11 @@ async def on_guild_join(guild):
                 title="Nighthawk — Setup",
                 description=(
                     "Hvala što si me dodao/la! Koristi slash komande za postavljanje:\n\n"
-                    f"**1.** `/set_channel` — odaberi kanal za events\n"
-                    f"**2.** `/set_time` — postavi minute starta i kraja\n"
-                    f"**3.** `/set_draw` — postavi minutu izvlačenja\n\n"
+                    f"**1.** `/inf_set_channel` — odaberi kanal za events\n"
+                    f"**2.** `/inf_set_time` — postavi minute starta i kraja\n"
+                    f"**3.** `/inf_set_draw` — postavi minutu izvlačenja\n\n"
                     f"Nakon toga bot automatski pokreće event svaki sat.\n"
-                    f"Upiši `/helpinf` za sve komande."
+                    f"Upiši `/inf_help` za sve komande."
                 ),
                 color=NH_CREAM
             )
