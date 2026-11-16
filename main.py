@@ -4517,6 +4517,18 @@ SFERE_MODES = {'napad': ('Napad', '⚔️', 'napadamo'), 'obrana': ('Obrana', '�
 def _sfere_mode(ev):
     return SFERE_MODES.get(ev.get('mode'))
 
+def _sfere_target(ev) -> str:
+    """Protiv koga (neobavezno); prazno ako nije upisano."""
+    return (ev.get('target') or '').strip()
+
+def _sfere_mode_label(ev) -> str:
+    """Npr. '⚔️ Napad protiv X' / '🛡️ Obrana protiv X' (bez 'protiv' ako meta nije upisana)."""
+    md = _sfere_mode(ev)
+    if not md:
+        return ''
+    t = _sfere_target(ev)
+    return f"{md[1]} {md[0]}" + (f" protiv {t}" if t else "")
+
 def _sfere_end_at(ev):
     return datetime.fromtimestamp(ev['end_ts'], TIMEZONE)
 
@@ -4552,10 +4564,11 @@ def build_sfere_embed(ev):
     info = [("Zatvaranje", f"{end_at.strftime('%H:%M')} · {end_at.strftime('%d.%m.')}" + ("\nlista zatvorena" if ev['locked'] else ""))]
     md = _sfere_mode(ev)
     if md:
-        info.insert(0, ("Sfera", f"{md[1]} {md[0]} — {md[2]}"))
+        t = _sfere_target(ev)
+        info.insert(0, ("Sfera", f"{md[1]} {md[0]} — {md[2]}" + (f" **{t}**" if t else "")))
     return build_nh_list_embed(
         title=f"NIGHTHAWK — Sfere Lista · {md[0]}" if md else "NIGHTHAWK — Sfere Lista",
-        subtitle=(f"Sfere ({md[2]}) — " if md else "Sfere — ") + f"prvih **{ev['max_slots']}** dobiva mjesto. Lista se zatvara <t:{ts}:R>.",
+        subtitle=(f"Sfere ({md[2]}{' ' + _sfere_target(ev) if _sfere_target(ev) else ''}) — " if md else "Sfere — ") + f"prvih **{ev['max_slots']}** dobiva mjesto. Lista se zatvara <t:{ts}:R>.",
         lines=lines, count=len(ev['participants']), max_slots=ev['max_slots'],
         locked=ev['locked'], info=info,
         footer="Klikni gumb ispod i osiguraj mjesto",
@@ -4763,7 +4776,7 @@ async def _sfere_close(ev):
     ev['locked'] = True
     end_at = _sfere_end_at(ev)
     _archive_event('sfere', ev['participants'][:ev['max_slots']], ev['names'], ev['channel_id'], ref=ev['id'],
-                   extra={'sfera': end_at.strftime('%d.%m. %H:%M'), 'mode': ev.get('mode')})
+                   extra={'sfera': end_at.strftime('%d.%m. %H:%M'), 'mode': ev.get('mode'), 'target': _sfere_target(ev) or None})
     ev.setdefault('list_msg_ids', [])
     ev['delete_ts'] = (datetime.now(TIMEZONE) + timedelta(minutes=SFERE_LIST_DELETE_MIN)).timestamp()
     _sfere_persist()   # prvo zapiši da se zatvaranje ne ponavlja ako nešto pukne
@@ -4785,12 +4798,12 @@ async def _sfere_close(ev):
     guild = getattr(channel, 'guild', None)
     if ev['participants']:
         md = _sfere_mode(ev)
-        lines = [f"🔮 **Sfere lista{' — ' + md[1] + ' ' + md[0] if md else ''} — zatvorena u {end_at.strftime('%H:%M')}:**"]
+        lines = [f"🔮 **Sfere lista{' — ' + _sfere_mode_label(ev) if md else ''} — zatvorena u {end_at.strftime('%H:%M')}:**"]
         lines += [f"{i}. {_sfere_entry_text(ev, guild, uid)}"
                   for i, uid in enumerate(ev['participants'][:ev['max_slots']], start=1)]
     else:
         md = _sfere_mode(ev)
-        lines = [f"😢 **Nitko nije na Sfere listi{' (' + md[0] + ')' if md else ''}** (zatvorena u {end_at.strftime('%H:%M')})."]
+        lines = [f"😢 **Nitko nije na Sfere listi{' (' + _sfere_mode_label(ev) + ')' if md else ''}** (zatvorena u {end_at.strftime('%H:%M')})."]
     try:
         for chunk in _chunk_lines(lines):
             m = await channel.send(chunk)
@@ -4806,7 +4819,7 @@ async def _sfere_cleanup(ev):
     Kopija u arhivi (/zadnja_lista) ostaje."""
     if not ev.get('locked'):   # /sfere_kraj prije zatvaranja — svejedno spremi arhivu
         _archive_event('sfere', ev['participants'][:ev['max_slots']], ev['names'], ev['channel_id'], ref=ev['id'],
-                       extra={'sfera': _sfere_end_at(ev).strftime('%d.%m. %H:%M'), 'mode': ev.get('mode')})
+                       extra={'sfera': _sfere_end_at(ev).strftime('%d.%m. %H:%M'), 'mode': ev.get('mode'), 'target': _sfere_target(ev) or None})
     sfere_events.pop(ev['id'], None)
     _sfere_persist()
     channel = await _get_channel(ev['channel_id'])
@@ -4850,6 +4863,7 @@ async def _sfere_restore():
                 'msg_ids': [int(x) for x in raw.get('msg_ids', [])],
                 'list_msg_ids': [int(x) for x in raw.get('list_msg_ids', [])],
                 'mode': raw.get('mode') if raw.get('mode') in SFERE_MODES else None,
+                'target': str(raw.get('target') or ''),
                 'delete_ts': float(raw['delete_ts']) if raw.get('delete_ts') is not None else None,
                 'owner_id': int(raw['owner_id']) if raw.get('owner_id') else None,
             }
@@ -4874,6 +4888,8 @@ class SfereTimeModal(discord.ui.Modal, title="🔮 Sfere — nova lista"):
                                    required=True, max_length=8)
     mjesta = discord.ui.TextInput(label="Broj mjesta (prazno = 10)", placeholder="10",
                                   required=False, max_length=3)
+    protiv = discord.ui.TextInput(label="Protiv koga? (nije obavezno)", placeholder="npr. ime famile / grupe",
+                                  required=False, max_length=40)
 
     async def on_submit(self, interaction: discord.Interaction):
         end_at = _sfere_parse_time(self.vrijeme.value)
@@ -4897,6 +4913,7 @@ class SfereTimeModal(discord.ui.Modal, title="🔮 Sfere — nova lista"):
         ev = {'id': 0, 'channel_id': channel.id, 'end_ts': end_at.timestamp(), 'max_slots': slots,
               'participants': [], 'names': {}, 'locked': False, 'msg_ids': [], 'list_msg_ids': [], 'delete_ts': None,
               'mode': self.mode,
+              'target': (self.protiv.value or '').strip().replace('@', '@\u200b').replace('`', "'"),
               'owner_id': interaction.user.id}
         try:
             msg = await channel.send(embed=build_sfere_embed(ev), view=SfereJoinButtonView())
@@ -4908,7 +4925,8 @@ class SfereTimeModal(discord.ui.Modal, title="🔮 Sfere — nova lista"):
         sfere_events[msg.id] = ev
         try:
             md = SFERE_MODES.get(self.mode)
-            what = f" {md[1]} **{md[0].upper()}** — {md[2]}!" if md else ""
+            tg = ev['target']
+            what = (f" {md[1]} **{md[0].upper()}{' PROTIV ' + tg.upper() if tg else ''}** — {md[2]}{' ' + tg if tg else ''}!") if md else ""
             ann = await channel.send(f"@everyone 🔮 **Sfere lista je počela!{what} Prvih {slots} ulaze! Lista se zatvara u {end_at.strftime('%H:%M')} 🔮**")
             ev['msg_ids'].append(ann.id)
         except Exception as e:
