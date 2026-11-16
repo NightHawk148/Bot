@@ -3601,6 +3601,47 @@ async def bonus_vrati(interaction: discord.Interaction, koja: app_commands.Range
         f"Prethodno stanje je spremljeno u arhivu.", ephemeral=True)
 
 
+def _storage_backend_text() -> str:
+    if DATABASE_URL:
+        return "Postgres baza (trajno)"
+    if 'DATA_DIR' in os.environ:
+        mounted = os.path.ismount(os.path.abspath(DATA_DIR))
+        return f"datoteke u {DATA_DIR}" + (" (volume — trajno)" if mounted else " ⚠️ NIJE volume — briše se pri redeployu")
+    return "datoteke u privremenoj mapi ⚠️ briše se pri svakom restartu/redeployu"
+
+def _storage_selftest() -> str:
+    """Zapiši i pročitaj probni zapis. Vraća kratki opis rezultata."""
+    try:
+        if DATABASE_URL:
+            _db_ensure_table()
+            probe = {'t': datetime.now(TIMEZONE).isoformat()}
+            _db_run(_DB_UPSERT, ('selftest', json.dumps(probe)))
+            row = _db_run("SELECT value FROM bot_storage WHERE key = %s", ('selftest',), fetch=True)
+            ok = bool(row) and json.loads(row[0]) == probe
+            n = _db_run("SELECT count(*) FROM bot_storage", fetch=True)[0]
+            return f"✅ zapis/čitanje u bazi radi ({n} spremljenih zapisa)" if ok else "❌ baza je prihvatila zapis, ali čitanje ne vraća isto"
+        path = os.path.join(DATA_DIR, 'selftest.json')
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write('{}')
+        return "✅ zapis u datoteku radi"
+    except Exception as e:
+        return f"❌ {e}"
+
+@bot.tree.command(name="storage_status", description="Provjeri gdje se podaci spremaju i radi li spremanje (trajnost nakon restarta).")
+@app_commands.default_permissions(administrator=True)
+async def storage_status(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    test = await asyncio.to_thread(_storage_selftest)
+    msg = (f"💾 **Spremanje:** {_storage_backend_text()}\n"
+           f"🧪 **Test:** {test}\n"
+           f"📊 **Bonus tablica trenutno:** {len(BONUS['totals'])} igrača")
+    if not STORAGE_DURABLE or (not DATABASE_URL and 'DATA_DIR' not in os.environ):
+        msg += "\n\n⚠️ Podaci se **gube pri restartu**. Spoji Postgres (`DATABASE_URL` + `psycopg2-binary` u requirements.txt) ili volume + `DATA_DIR`."
+    elif 'DATA_DIR' in os.environ and not DATABASE_URL and not os.path.ismount(os.path.abspath(DATA_DIR)):
+        msg += "\n\n⚠️ `DATA_DIR` postoji, ali na toj putanji nije spojen Railway volume — podaci se gube pri redeployu."
+    await interaction.followup.send(msg, ephemeral=True)
+
+
 # ==========================================
 # BONUS SUSTAV (tjedni bonusi — /event)
 # ==========================================
@@ -5673,6 +5714,7 @@ async def copy_role(interaction: discord.Interaction, source_role: discord.Role,
 @bot.event
 async def on_ready():
     print(f"✅ LOGGED IN AS {bot.user} (ID: {bot.user.id})")
+    print(f"💾 Spremanje: {_storage_backend_text()}")
     try:
         await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="Nighthawk"))
     except Exception as e:
